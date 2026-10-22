@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>COA to Excel</title>
+<style>
+  :root { --bg:#fff; --fg:#1f2328; --muted:#59636e; --line:#d1d9e0; --soft:#f6f8fa;
+          --accent:#d1242f; --ok:#1a7f37; --fail:#cf222e; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0d1117; --fg:#e6edf3; --muted:#9198a1; --line:#3d444d; --soft:#151b23;
+            --accent:#f85149; --ok:#3fb950; --fail:#f85149; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg);
+         font:16px/1.5 "Segoe UI", system-ui, -apple-system, Arial, sans-serif; }
+  main { max-width:760px; margin:0 auto; padding:40px 16px; }
+  h1 { font-size:28px; margin:0 0 4px; }
+  .sub { color:var(--muted); margin:0 0 24px; }
+  .drop { border:2px dashed var(--line); border-radius:12px; padding:28px 16px; text-align:center;
+          background:var(--soft); cursor:pointer; }
+  .drop.over { border-color:var(--accent); }
+  .drop input { display:none; }
+  #chosen { color:var(--muted); font-size:14px; margin-top:8px; word-break:break-word; }
+  button, a.btn { display:inline-block; background:var(--accent); color:#fff; border:0; border-radius:8px;
+         padding:10px 18px; font-size:15px; cursor:pointer; text-decoration:none; margin:6px 8px 6px 0; }
+  button:disabled { opacity:.5; cursor:not-allowed; }
+  a.btn.sec { background:var(--soft); color:var(--fg); border:1px solid var(--line); }
+  #status { margin:16px 0; color:var(--muted); min-height:1.5em; }
+  table { border-collapse:collapse; width:100%; margin:12px 0; font-size:14px; }
+  th, td { text-align:left; padding:8px; border-bottom:1px solid var(--line); vertical-align:top; }
+  .ok { color:var(--ok); } .fail { color:var(--fail); }
+  .table-wrap { overflow-x:auto; }
+  footer { color:var(--muted); font-size:13px; margin-top:32px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>COA → Excel inventory</h1>
+  <p class="sub">Runs entirely in your browser. Your files are not uploaded anywhere.</p>
+
+  <label class="drop" id="drop">
+    <input type="file" id="files" multiple accept=".pdf,.zip">
+    <strong>Choose COA files</strong> or drop them here<br>
+    <span style="color:var(--muted);font-size:14px">PDF, or ZIP of PDFs. Several at once is fine.</span>
+    <div id="chosen"></div>
+  </label>
+  <button id="go" disabled>Process</button>
+
+  <div id="status">Starting…</div>
+  <div id="results"></div>
+
+  <footer>Uses Python running in this browser tab (Pyodide). Once the page has loaded, conversion works offline.</footer>
+</main>
+
+<script>
+  const worker = new Worker("worker.js");
+  const input = document.getElementById("files");
+  const drop = document.getElementById("drop");
+  const go = document.getElementById("go");
+  const statusEl = document.getElementById("status");
+  const resultsEl = document.getElementById("results");
+  let ready = false, picked = [], urls = [];
+
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+  function setFiles(list) {
+    picked = Array.from(list).filter((f) => /\.(pdf|zip)$/i.test(f.name));
+    document.getElementById("chosen").textContent =
+      picked.length ? picked.map((f) => f.name).join(", ") : "";
+    go.disabled = !(ready && picked.length);
+  }
+  input.addEventListener("change", () => setFiles(input.files));
+  ["dragover", "dragenter"].forEach((e) => drop.addEventListener(e, (ev) => { ev.preventDefault(); drop.classList.add("over"); }));
+  ["dragleave", "drop"].forEach((e) => drop.addEventListener(e, () => drop.classList.remove("over")));
+  drop.addEventListener("drop", (ev) => { ev.preventDefault(); setFiles(ev.dataTransfer.files); });
+
+  go.addEventListener("click", async () => {
+    go.disabled = true;
+    resultsEl.innerHTML = "";
+    urls.forEach(URL.revokeObjectURL); urls = [];
+    const files = await Promise.all(picked.map(async (f) => ({ name: f.name, data: await f.arrayBuffer() })));
+    worker.postMessage({ files }, files.map((f) => f.data));
+  });
+
+  function link(data, name, mime, cls) {
+    const url = URL.createObjectURL(new Blob([data], { type: mime }));
+    urls.push(url);
+    return `<a class="btn ${cls}" href="${url}" download="${esc(name)}">⬇ ${esc(name)}</a><br>`;
+  }
+
+  worker.onmessage = (ev) => {
+    const m = ev.data;
+    if (m.type === "status") statusEl.textContent = m.text;
+    if (m.type === "ready") { ready = true; statusEl.textContent = "Ready."; setFiles(picked); }
+    if (m.type === "fatal") statusEl.innerHTML = `<span class="fail">Could not start: ${esc(m.text)}</span>`;
+    if (m.type === "error") { statusEl.innerHTML = `<span class="fail">Error: ${esc(m.text)}</span>`; go.disabled = false; }
+    if (m.type === "done") {
+      const rows = m.results.map((r) => `<tr><td>${esc(r.name)}</td>` + (r.ok
+        ? `<td class="ok">OK</td><td>${r.coas}</td><td>${esc(r.note)}</td>`
+        : `<td class="fail">Failed</td><td></td><td>${esc(r.reason)}</td>`) + "</tr>").join("");
+      const xlsx = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+      let links = "";
+      if (m.all) links += link(m.all, "COA_inventory_files.zip", "application/zip", "") ;
+      links += m.outputs.map((o) => link(o.data, o.name, xlsx, m.all ? "sec" : "")).join("");
+      resultsEl.innerHTML =
+        `<div class="table-wrap"><table><tr><th>File</th><th>Result</th><th>COAs</th><th>Details</th></tr>${rows}</table></div>` + links;
+      statusEl.innerHTML = m.outputs.length
+        ? `<span class="ok">${m.outputs.length} Excel file(s) ready (${m.seconds.toFixed(1)} s).</span>`
+        : `<span class="fail">No files could be processed.</span>`;
+      go.disabled = !picked.length;
+    }
+  };
+</script>
+</body>
+</html>
