@@ -3,7 +3,7 @@
 
 For every PDF in the zip, the first page is read and these columns are filled:
 Chemical, Synonyms, Lot No., Product No., Expiry Date, CAS No., Manufacturer,
-Form, Concentration, Chemical Formula, Drug Mol. Wt.
+Form, Concentration, Chemical Formula, Mol. Wt.
 A value that the COA does not provide is written as "NA". All other columns are
 left blank for manual entry.
 
@@ -27,8 +27,8 @@ from openpyxl.styles import Alignment, Font, PatternFill
 COLUMNS = [
     "Bottle no.", "Date Received", "Chemical", "Synonyms", "Lot No.", "Product No.",
     "Expiry Date", "CAS No.", "Manufacturer", "Container", "Cap Color", "Amount", "Form",
-    "Class", "Concentration", "Location", "Chemical Formula", "Drug Mol. Wt.",
-    "Name of Officer", "Remarks",
+    "Concentration", "Location", "Chemical Formula", "Mol. Wt.",
+    "Project", "Remarks",
 ]
 NA = "NA"
 
@@ -223,7 +223,7 @@ def parse_coa(pdf_path_or_file, filename):
 
     mw = (search(r"Molecular\s+weight\s*:?\s*([\d.]+)\s*\(salt\)", text)
           or search(r"(?:Formula|Molecular)\s+weight\s*:?\s*([\d.]+)", text))
-    rec["Drug Mol. Wt."] = float(mw) if mw else None
+    rec["Mol. Wt."] = float(mw) if mw else None
 
     expiry = (search(r"Expir(?:y|ation)\s+date\s*:?\s*(.+?)(?:\s{3,}|\(|$)", text)
               or search(r"(?:Re-?test|Use[- ]by)\s+date\s*:?\s*(.+?)(?:\s{3,}|\(|$)", text))
@@ -264,7 +264,7 @@ def parse_coa(pdf_path_or_file, filename):
         rec["Concentration"] = parse_concentration(product_name)
 
     for col in ["Chemical", "Synonyms", "Lot No.", "Product No.", "Expiry Date", "CAS No.",
-                "Manufacturer", "Form", "Concentration", "Chemical Formula", "Drug Mol. Wt."]:
+                "Manufacturer", "Form", "Concentration", "Chemical Formula", "Mol. Wt."]:
         if rec.get(col) in (None, ""):
             rec[col] = NA
     return rec
@@ -325,7 +325,7 @@ def main():
                     problems.append(orig)
                     rec = {col: NA for col in ["Chemical", "Synonyms", "Lot No.", "Product No.",
                                                "Expiry Date", "CAS No.", "Manufacturer", "Form",
-                                               "Concentration", "Chemical Formula", "Drug Mol. Wt."]}
+                                               "Concentration", "Chemical Formula", "Mol. Wt."]}
 
                 stem = f"{safe_name(rec['Lot No.'])}_{safe_name(rec['Expiry Date'])}"
                 new_name, n = f"{stem}.pdf", 2
