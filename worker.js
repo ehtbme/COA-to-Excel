@@ -10,12 +10,12 @@ async function init() {
   postMessage({ type: "status", text: "Loading Python in your browser (first visit downloads ~20 MB, then it's cached)…" });
   py = await loadPyodide({ indexURL: PYODIDE });
   await py.loadPackage(["micropip", "cryptography", "pillow", "charset-normalizer"]);
-  const wheels = await (await fetch(base + "wheels/manifest.json")).json();
+  const wheels = await (await fetch(base + "wheels/manifest.json", { cache: "no-cache" })).json();
   py.globals.set("wheel_urls", wheels.map((w) => base + "wheels/" + w));
   await py.runPythonAsync("import micropip\nawait micropip.install(list(wheel_urls), deps=False)");
   py.FS.mkdirTree("/app");
   for (const f of ["coa_to_excel.py", "browser_glue.py"]) {
-    py.FS.writeFile("/app/" + f, await (await fetch(base + "py/" + f)).text());
+    py.FS.writeFile("/app/" + f, await (await fetch(base + "py/" + f, { cache: "no-cache" })).text());
   }
   py.runPython("import sys; sys.path.insert(0, '/app'); import browser_glue");
   postMessage({ type: "ready" });

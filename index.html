@@ -175,7 +175,9 @@
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
   $("cols").innerHTML = COLUMNS.map(([c, a]) => `<li class="${a ? "auto" : ""}">${esc(c)}</li>`).join("");
 
-  const worker = new Worker("worker.js");
+  // Bump VERSION when worker.js or py/*.py change, so browsers don't keep using cached copies.
+  const VERSION = "2026-11-16b";
+  const worker = new Worker("worker.js?v=" + VERSION);
   const input = $("files"), drop = $("drop"), go = $("go"), statusEl = $("status");
   let ready = false, busy = false, picked = [], urls = [];
 
