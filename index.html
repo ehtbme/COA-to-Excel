@@ -176,8 +176,10 @@
   $("cols").innerHTML = COLUMNS.map(([c, a]) => `<li class="${a ? "auto" : ""}">${esc(c)}</li>`).join("");
 
   // Bump VERSION when worker.js or py/*.py change, so browsers don't keep using cached copies.
-  const VERSION = "2026-11-16b";
-  const worker = new Worker("worker.js?v=" + VERSION);
+  const VERSION = "2026-11-16c";
+  const worker = window.COA_WORKER_SRC   // set in the single-file build, which works when double-clicked
+    ? new Worker(URL.createObjectURL(new Blob([window.COA_WORKER_SRC], { type: "text/javascript" })))
+    : new Worker("worker.js?v=" + VERSION);
   const input = $("files"), drop = $("drop"), go = $("go"), statusEl = $("status");
   let ready = false, busy = false, picked = [], urls = [];
 

@@ -9,6 +9,14 @@ browser tab and are **never uploaded anywhere**. There is no server, nothing to 
 
 Pick **one** of these. In each case, keep the window that is serving the page open while you use it.
 
+### Easiest: one HTML file, double-click it
+`dist/COA_to_Excel.html` (0.7 MB) is the whole tool in a single file. Send it to colleagues by
+email or Teams, or put it on SharePoint. They save it anywhere and **double-click it**; it opens in
+Edge or Chrome and works the same as the other options. No server, no folder, no install.
+It still needs internet access to `cdn.jsdelivr.net` when it opens (to load Python), like A–C below.
+
+Rebuild it after changing the converter or the page: `python3 build_single.py`.
+
 ### A. Online (nothing to start)
 Open **https://ehtbme.github.io/COA-to-Excel/** in Edge or Chrome.
 If it says *"Your connection isn't private"*, the network is blocking GitHub; use B instead.
@@ -38,7 +46,7 @@ If it says *"Your connection isn't private"*, the network is blocking GitHub; us
 3. Stop with **Ctrl+C** in that terminal.
 
 ### Notes
-- **Don't double-click `index.html`.** Opened as a file (`file://...`), the browser blocks the
+- **Don't double-click `index.html`** (double-click `dist/COA_to_Excel.html` instead). Opened as a file (`file://...`), the browser blocks the
   background worker and the page stays on *Starting…*. Always open it through `http://` as above.
 - The page fetches Python (Pyodide) from `cdn.jsdelivr.net` when it loads, so B and C still need
   internet access to that site. If the page stops at *Starting…* or shows *Could not start*,
@@ -56,6 +64,8 @@ If it says *"Your connection isn't private"*, the network is blocking GitHub; us
 | `wheels/` | pdfplumber, pdfminer.six, openpyxl, et_xmlfile (pure Python). Pyodide provides cryptography, Pillow and charset-normalizer. |
 | `.nojekyll` | Tells GitHub Pages to serve the files as they are |
 | `build.sh` | Refreshes `py/coa_to_excel.py` and `wheels/` |
+| `build_single.py` | Packs everything into `dist/COA_to_Excel.html` (one file, works when double-clicked) |
+| `dist/COA_to_Excel.html` | The single-file version |
 | `tests/browser_test.py` | Headless-Chromium end-to-end test (not needed on the site) |
 
 ## Publish on GitHub Pages
