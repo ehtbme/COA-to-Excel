@@ -1,6 +1,7 @@
 """Runs coa_to_excel.py inside the browser (Pyodide). Called from worker.js.
 
-Each uploaded file -> one Excel sheet, same rules as the web and desktop apps.
+Each uploaded file -> one Excel sheet plus its COAs renamed <lot>_<expiry>.pdf, same rules as the
+web and desktop apps.
 Nothing here touches the network: files live in the browser's in-memory filesystem.
 """
 import contextlib
@@ -108,7 +109,11 @@ def convert(name, src, job):
 
 
 def convert_all(names_json):
-    """Inputs are /in/0, /in/1, ...; outputs are written to /out/<i>.xlsx and /out/all.zip."""
+    """Inputs are /in/0, /in/1, ...; outputs are written to /out/<i>.xlsx and /out/all.zip.
+
+    all.zip holds, for each converted file, <name>_COA_inventory.xlsx and
+    <name>_renamed_COAs/<lot>_<expiry>.pdf (same layout as the folder watcher's Results folder).
+    """
     names = json.loads(names_json)
     work, outdir = Path("/work"), Path("/out")
     for d in (work, outdir):
@@ -124,12 +129,19 @@ def convert_all(names_json):
             used.add(res["xlsx_name"])
             shutil.copyfile(xlsx, outdir / f"{i}.xlsx")
             res["file"] = f"/out/{i}.xlsx"
+            res["pdf_dir"] = res["xlsx_name"][:-len("_COA_inventory.xlsx")] + "_renamed_COAs"
+            coa_dir = xlsx.parent / "COA"
+            res["pdfs"] = sorted(str(f) for f in coa_dir.glob("*.pdf")) if coa_dir.is_dir() else []
         results.append(res)
     ok = [r for r in results if r["ok"]]
-    if len(ok) > 1:
-        with zipfile.ZipFile(outdir / "all.zip", "w", zipfile.ZIP_DEFLATED) as zf:
+    if ok:
+        # PDFs and xlsx are already compressed, so store them as they are (much faster in the browser).
+        with zipfile.ZipFile(outdir / "all.zip", "w", zipfile.ZIP_STORED) as zf:
             for r in ok:
                 zf.write(r["file"], arcname=r["xlsx_name"])
+                for pdf in r.pop("pdfs"):
+                    zf.write(pdf, arcname=f"{r['pdf_dir']}/{Path(pdf).name}")
+                    r["pdf_count"] = r.get("pdf_count", 0) + 1
     shutil.rmtree(work, ignore_errors=True)
     shutil.rmtree("/in", ignore_errors=True)
     return json.dumps(results)

@@ -38,7 +38,7 @@ onmessage = async (ev) => {
       if (r.ok) outputs.push({ name: r.xlsx_name, data: py.FS.readFile(r.file) });
     }
     let all = null;
-    if (outputs.length > 1) all = py.FS.readFile("/out/all.zip");
+    if (outputs.length) all = py.FS.readFile("/out/all.zip");
     postMessage({ type: "done", results, outputs, all, seconds: (performance.now() - t0) / 1000 });
   } catch (e) {
     postMessage({ type: "error", text: String(e) });
