@@ -5,6 +5,46 @@ A static web page that runs `coa_to_excel.py` **inside the user's browser** usin
 browser tab and are **never uploaded anywhere**. There is no server, nothing to install, and no
 `.exe`.
 
+## Open the page
+
+Pick **one** of these. In each case, keep the window that is serving the page open while you use it.
+
+### A. Online (nothing to start)
+Open **https://ehtbme.github.io/COA-to-Excel/** in Edge or Chrome.
+If it says *"Your connection isn't private"*, the network is blocking GitHub; use B instead.
+
+### B. On your Windows laptop (Anaconda)
+1. Copy this whole folder to the laptop, e.g. `C:\Users\you\COA-to-Excel\`
+   (or on GitHub: **Code → Download ZIP**, then unzip).
+2. Open **Anaconda Prompt** and run:
+   ```
+   cd C:\Users\you\COA-to-Excel
+   python -m http.server 8000 --bind 127.0.0.1
+   ```
+   It prints `Serving HTTP on 127.0.0.1 port 8000 ...`. Leave this window open.
+3. In Edge or Chrome, open **http://127.0.0.1:8000**
+4. Wait until the page says **Ready.** (about 10-30 s the first time), choose your COA files,
+   click **Process**, then click the download button.
+5. To stop: go back to Anaconda Prompt and press **Ctrl+C**.
+
+### C. On the Linux VM, viewed from VS Code
+1. In the VS Code terminal (connected to the VM):
+   ```bash
+   cd ~/Projects/ad-hoc/inventory/coa_browser
+   python3 -m http.server 8000 --bind 127.0.0.1
+   ```
+2. VS Code shows *"Your application running on port 8000 is available"* → **Open in Browser**.
+   If it doesn't, open the **Ports** tab, add port `8000`, and click the globe icon.
+3. Stop with **Ctrl+C** in that terminal.
+
+### Notes
+- **Don't double-click `index.html`.** Opened as a file (`file://...`), the browser blocks the
+  background worker and the page stays on *Starting…*. Always open it through `http://` as above.
+- The page fetches Python (Pyodide) from `cdn.jsdelivr.net` when it loads, so B and C still need
+  internet access to that site. If the page stops at *Starting…* or shows *Could not start*,
+  that site is probably blocked on your network.
+- `--bind 127.0.0.1` means only your own computer can open the page.
+
 ## Files
 
 | Path | What it is |
@@ -32,15 +72,6 @@ On a free account, the site and its code are **public**.
 bash build.sh                 # copies ../coa_to_excel/coa_to_excel.py, re-downloads wheels
 # then commit and push
 ```
-
-## Test locally
-
-```bash
-python3 -m http.server 8000 --bind 127.0.0.1    # in this folder, then open http://127.0.0.1:8000
-```
-
-You can't open `index.html` directly as a file (`file://`): browsers block the background worker
-there. Serve it over http as above, or use GitHub Pages.
 
 ## Requirements on the user's PC
 
