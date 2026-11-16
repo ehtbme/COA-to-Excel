@@ -24,7 +24,7 @@ If it says *"Your connection isn't private"*, the network is blocking GitHub; us
    It prints `Serving HTTP on 127.0.0.1 port 8000 ...`. Leave this window open.
 3. In Edge or Chrome, open **http://127.0.0.1:8000**
 4. Wait until the page says **Ready.** (about 10-30 s the first time), choose your COA files,
-   click **Process**, then click the download button.
+   click **Convert to Excel**, then click a download button.
 5. To stop: go back to Anaconda Prompt and press **Ctrl+C**.
 
 ### C. On the Linux VM, viewed from VS Code
@@ -49,7 +49,7 @@ If it says *"Your connection isn't private"*, the network is blocking GitHub; us
 
 | Path | What it is |
 |---|---|
-| `index.html` | The page: choose or drop files → Process → Download |
+| `index.html` | The page: choose or drop files → Convert to Excel → Download |
 | `worker.js` | Loads Python (Pyodide 0.26.4 from cdn.jsdelivr.net) in a background thread |
 | `py/coa_to_excel.py` | Your converter, copied unchanged by `build.sh` |
 | `py/browser_glue.py` | Same checks as the web/desktop apps (file types, zip limits, failures) |
