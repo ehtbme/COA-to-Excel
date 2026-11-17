@@ -177,8 +177,8 @@
 
   // Bump VERSION when worker.js or py/*.py change, so browsers don't keep using cached copies.
   const VERSION = "2026-11-16c";
-  const worker = window.COA_WORKER_SRC   // set in the single-file build, which works when double-clicked
-    ? new Worker(URL.createObjectURL(new Blob([window.COA_WORKER_SRC], { type: "text/javascript" })))
+  const worker = window.COA_LOCAL_WORKER   // set in the single-file build (plain JavaScript, nothing downloaded)
+    ? window.COA_LOCAL_WORKER()
     : new Worker("worker.js?v=" + VERSION);
   const input = $("files"), drop = $("drop"), go = $("go"), statusEl = $("status");
   let ready = false, busy = false, picked = [], urls = [];
