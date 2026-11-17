@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>COA to Excel</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230f6e6e'/%3E%3Cpath d='M9 8h10l5 5v11a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z' fill='%23fff'/%3E%3Cpath d='M11 17h10M11 20h10M11 14h5' stroke='%230f6e6e' stroke-width='1.6'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg:#f3f5f7; --card:#ffffff; --fg:#17202a; --muted:#5b6672; --line:#dde3e8; --soft:#f7f9fa;
+    --accent:#0f6e6e; --accent-hover:#0b5858; --accent-soft:#e3f1f0;
+    --ok:#17794a; --ok-soft:#e4f4ea; --fail:#b42318; --fail-soft:#fdecea;
+    --shadow:0 1px 2px rgba(16,24,40,.05), 0 4px 16px rgba(16,24,40,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#0e1316; --card:#161d21; --fg:#e7ecef; --muted:#9aa6af; --line:#2a343a; --soft:#1b2328;
+      --accent:#3fb6a8; --accent-hover:#5cc9bc; --accent-soft:#16312f;
+      --ok:#4cc38a; --ok-soft:#163024; --fail:#f2766b; --fail-soft:#3a1d1b;
+      --shadow:none;
+    }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg);
+         font:15px/1.55 "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif; }
+  .wrap { max-width:820px; margin:0 auto; padding:32px 16px 48px; }
+
+  header { display:flex; align-items:center; gap:14px; margin-bottom:6px; }
+  .logo { width:44px; height:44px; border-radius:10px; background:var(--accent); display:grid; place-items:center; flex:none; }
+  .logo svg { width:24px; height:24px; }
+  h1 { font-size:24px; line-height:1.2; margin:0; letter-spacing:-.01em; }
+  .tagline { color:var(--muted); margin:2px 0 0; font-size:14px; }
+  .privacy { display:inline-flex; align-items:center; gap:6px; margin:18px 0 22px; padding:6px 12px;
+             border-radius:999px; background:var(--accent-soft); color:var(--accent); font-size:13px; font-weight:600; }
+  .privacy svg { width:14px; height:14px; }
+
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow);
+          padding:24px; margin-bottom:16px; }
+  .step { display:flex; align-items:center; gap:10px; font-weight:600; margin:0 0 14px; font-size:15px; }
+  .num { width:24px; height:24px; border-radius:50%; background:var(--accent); color:#fff; font-size:13px;
+         display:grid; place-items:center; flex:none; }
+  .step.dim { color:var(--muted); } .step.dim .num { background:var(--line); color:var(--muted); }
+
+  .drop { display:block; border:2px dashed var(--line); border-radius:12px; padding:32px 16px; text-align:center;
+          background:var(--soft); cursor:pointer; transition:border-color .15s, background .15s; }
+  .drop:hover, .drop:focus-within { border-color:var(--accent); }
+  .drop.over { border-color:var(--accent); background:var(--accent-soft); }
+  .drop input { position:absolute; width:1px; height:1px; opacity:0; }
+  .drop svg { width:40px; height:40px; color:var(--accent); margin-bottom:6px; }
+  .drop .big { font-size:16px; } .drop .big b { color:var(--accent); }
+  .drop .hint { color:var(--muted); font-size:13px; margin-top:4px; }
+
+  .files { list-style:none; padding:0; margin:14px 0 0; display:grid; grid-template-columns:minmax(0,1fr); gap:8px; }
+  .files li { display:flex; align-items:center; gap:10px; padding:9px 12px; border:1px solid var(--line);
+              border-radius:10px; background:var(--card); font-size:14px; }
+  .tag { font-size:11px; font-weight:700; padding:2px 7px; border-radius:6px; background:var(--accent-soft);
+         color:var(--accent); text-transform:uppercase; flex:none; }
+  .fname { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .size { color:var(--muted); font-size:13px; flex:none; }
+  .x { border:0; background:none; color:var(--muted); cursor:pointer; font-size:18px; line-height:1; padding:2px 6px; border-radius:6px; }
+  .x:hover { background:var(--soft); color:var(--fail); }
+  .skipped { color:var(--fail); font-size:13px; margin-top:8px; }
+
+  .actions { display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-top:18px; }
+  .btn { display:inline-flex; align-items:center; gap:8px; background:var(--accent); color:#fff; border:0;
+         border-radius:10px; padding:11px 20px; font:600 15px/1 inherit; font-family:inherit; cursor:pointer;
+         text-decoration:none; transition:background .15s; }
+  .btn:hover { background:var(--accent-hover); }
+  .btn:disabled { opacity:.45; cursor:not-allowed; }
+  .btn svg { width:18px; height:18px; flex:none; }
+  .btn.sec { background:var(--card); color:var(--fg); border:1px solid var(--line); font-weight:500; }
+  .btn.sec:hover { border-color:var(--accent); color:var(--accent); }
+
+  #status { display:flex; align-items:center; gap:10px; color:var(--muted); font-size:14px; min-height:22px; }
+  .spin { width:16px; height:16px; border:2px solid var(--line); border-top-color:var(--accent); border-radius:50%;
+          animation:spin .8s linear infinite; flex:none; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .s-ok { color:var(--ok); font-weight:600; } .s-fail { color:var(--fail); font-weight:600; }
+
+  .summary { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
+  .stat { flex:1 1 90px; padding:12px 14px; border-radius:10px; background:var(--soft); border:1px solid var(--line); }
+  .stat b { display:block; font-size:22px; line-height:1.2; }
+  .stat span { color:var(--muted); font-size:13px; }
+  .table-wrap { overflow-x:auto; border:1px solid var(--line); border-radius:10px; }
+  table { border-collapse:collapse; width:100%; font-size:14px; }
+  th, td { text-align:left; padding:10px 12px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { background:var(--soft); color:var(--muted); font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:.03em; }
+  tr:last-child td { border-bottom:0; }
+  td.n { text-align:right; font-variant-numeric:tabular-nums; }
+  td .why { display:block; color:var(--muted); font-size:13px; margin-top:2px; }
+  td .why.bad { color:var(--fail); }
+  .pill { display:inline-block; padding:2px 10px; border-radius:999px; font-size:12px; font-weight:700; }
+  .pill.ok { background:var(--ok-soft); color:var(--ok); } .pill.fail { background:var(--fail-soft); color:var(--fail); }
+  .downloads { display:flex; flex-direction:column; align-items:flex-start; gap:10px; margin-top:18px; }
+  .downloads .btn { max-width:100%; }
+  .dl-note { margin:-2px 0 2px; font-size:13px; }
+  .downloads .btn span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+  details { font-size:14px; }
+  summary { cursor:pointer; font-weight:600; }
+  .cols { display:flex; flex-wrap:wrap; gap:6px; margin:12px 0 6px; padding:0; list-style:none; }
+  .cols li { padding:3px 9px; border-radius:6px; border:1px solid var(--line); font-size:13px; }
+  .cols li.auto { background:var(--accent-soft); border-color:transparent; color:var(--accent); font-weight:600; }
+  .muted { color:var(--muted); }
+  footer { color:var(--muted); font-size:13px; text-align:center; margin-top:24px; }
+  [hidden] { display:none !important; }
+  @media (max-width:520px) { .card { padding:18px; } h1 { font-size:21px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5"/><path d="M8.5 13h7M8.5 16.5h7"/>
+      </svg>
+    </div>
+    <div>
+      <h1>COA to Excel inventory</h1>
+      <p class="tagline">Turn Certificates of Analysis into an inventory spreadsheet.</p>
+    </div>
+  </header>
+  <div class="privacy">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+    Runs in your browser. Your files are never uploaded.
+  </div>
+
+  <section class="card">
+    <p class="step"><span class="num">1</span>Choose COA files</p>
+    <label class="drop" id="drop">
+      <input type="file" id="files" multiple accept=".pdf,.zip">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/>
+      </svg>
+      <div class="big"><b>Click to choose</b> or drag files here</div>
+      <div class="hint">PDF files, or ZIP files of PDFs. You can add several at once.</div>
+    </label>
+    <ul class="files" id="chosen"></ul>
+    <div class="skipped" id="skipped" hidden></div>
+
+    <div class="actions">
+      <button class="btn" id="go" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        Convert to Excel
+      </button>
+      <div id="status"><span class="spin"></span>Loading…</div>
+    </div>
+  </section>
+
+  <section class="card" id="resultsCard" hidden>
+    <p class="step"><span class="num">2</span>Download results</p>
+    <div id="results"></div>
+  </section>
+
+  <section class="card">
+    <details>
+      <summary>What goes into the Excel sheet?</summary>
+      <p class="muted" style="margin:10px 0 0">One row per COA. <b style="color:var(--accent)">Highlighted</b> columns are filled from the COA
+        (<code>NA</code> when that COA doesn't state it); the rest are left blank for you to fill in.</p>
+      <ul class="cols" id="cols"></ul>
+      <p class="muted" style="margin:6px 0 0">Expiry dates are written as <code>DDMMMYYYY</code>, e.g. <code>09JUN2029</code>.
+        If the COA gives only month and year, the day is set to <code>01</code>.</p>
+    </details>
+  </section>
+
+  <footer>Everything runs inside this one page: no internet needed, nothing is installed or uploaded.</footer>
+</div>
+
+<script>
+  const COLUMNS = [
+    ["Bottle no.",0],["Date Received",0],["Chemical",1],["Synonyms",1],["Lot No.",1],["Product No.",1],
+    ["Expiry Date",1],["CAS No.",1],["Manufacturer",1],["Container",0],["Cap Color",0],["Amount",0],["Form",1],
+    ["Concentration",1],["Location",0],["Chemical Formula",1],["Mol. Wt.",1],["Project",0],["Remarks",0]];
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+  $("cols").innerHTML = COLUMNS.map(([c, a]) => `<li class="${a ? "auto" : ""}">${esc(c)}</li>`).join("");
+
+  const worker = window.COA_LOCAL_WORKER();   // js/app_local.js: the converter, run in this page
+  const input = $("files"), drop = $("drop"), go = $("go"), statusEl = $("status");
+  let ready = false, busy = false, picked = [], urls = [];
+
+  const ICON_DL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v12M7 11l5 5 5-5"/><path d="M5 20h14"/></svg>';
+  const fmtSize = (n) => n < 1024 * 1024 ? `${Math.max(1, Math.round(n / 1024))} KB` : `${(n / 1048576).toFixed(1)} MB`;
+  function setStatus(html, spinning, idle) {
+    statusEl.innerHTML = (spinning ? '<span class="spin"></span>' : "") + html;
+    if (idle) statusEl.dataset.idle = "1"; else delete statusEl.dataset.idle;
+  }
+  function refresh() {
+    go.disabled = !(ready && picked.length && !busy);
+    if (ready && !busy && statusEl.dataset.idle)
+      setStatus('<span class="s-ok">Ready.</span>' + (picked.length ? "" : "&nbsp;Choose files to begin."), false, true);
+  }
+
+  function render() {
+    $("chosen").innerHTML = picked.map((f, i) =>
+      `<li><span class="tag">${esc(f.name.split(".").pop())}</span><span class="fname" title="${esc(f.name)}">${esc(f.name)}</span>` +
+      `<span class="size">${fmtSize(f.size)}</span><button class="x" data-i="${i}" title="Remove" aria-label="Remove ${esc(f.name)}">×</button></li>`).join("");
+    refresh();
+  }
+  function addFiles(list) {
+    const all = Array.from(list);
+    const good = all.filter((f) => /\.(pdf|zip)$/i.test(f.name));
+    const bad = all.filter((f) => !good.includes(f));
+    for (const f of good) if (!picked.some((p) => p.name === f.name && p.size === f.size)) picked.push(f);
+    $("skipped").hidden = !bad.length;
+    $("skipped").textContent = bad.length ? `Skipped (not PDF or ZIP): ${bad.map((f) => f.name).join(", ")}` : "";
+    render();
+  }
+  $("chosen").addEventListener("click", (e) => {
+    const b = e.target.closest(".x"); if (!b) return;
+    picked.splice(Number(b.dataset.i), 1); render();
+  });
+  input.addEventListener("change", () => { addFiles(input.files); input.value = ""; });
+  ["dragover", "dragenter"].forEach((e) => drop.addEventListener(e, (ev) => { ev.preventDefault(); drop.classList.add("over"); }));
+  ["dragleave", "drop"].forEach((e) => drop.addEventListener(e, () => drop.classList.remove("over")));
+  drop.addEventListener("drop", (ev) => { ev.preventDefault(); addFiles(ev.dataTransfer.files); });
+
+  go.addEventListener("click", async () => {
+    busy = true; refresh();
+    $("resultsCard").hidden = true; $("results").innerHTML = "";
+    urls.forEach(URL.revokeObjectURL); urls = [];
+    setStatus(`Reading ${picked.length} file(s)…`, true);
+    const files = await Promise.all(picked.map(async (f) => ({ name: f.name, data: await f.arrayBuffer() })));
+    worker.postMessage({ files }, files.map((f) => f.data));
+  });
+
+  function link(data, name, mime, cls) {
+    const url = URL.createObjectURL(new Blob([data], { type: mime }));
+    urls.push(url);
+    return `<a class="btn ${cls}" href="${url}" download="${esc(name)}">${ICON_DL}<span>${esc(name)}</span></a>`;
+  }
+
+  worker.onmessage = (ev) => {
+    const m = ev.data;
+    if (m.type === "status") setStatus(esc(m.text), true);
+    if (m.type === "ready") { ready = true; statusEl.dataset.idle = "1"; refresh(); }
+    if (m.type === "fatal") setStatus(`<span class="s-fail">Could not start: ${esc(m.text)}</span>`);
+    if (m.type === "error") { busy = false; setStatus(`<span class="s-fail">Error: ${esc(m.text)}</span>`); refresh(); }
+    if (m.type === "done") {
+      busy = false;
+      const ok = m.results.filter((r) => r.ok), failed = m.results.length - ok.length;
+      const coas = ok.reduce((s, r) => s + (r.coas || 0), 0);
+      const rows = m.results.map((r) => {
+        const why = r.ok ? (r.note ? `<span class="why">${esc(r.note)}</span>` : "") : `<span class="why bad">${esc(r.reason)}</span>`;
+        return `<tr><td>${esc(r.name)}${why}</td><td><span class="pill ${r.ok ? "ok" : "fail"}">${r.ok ? "OK" : "Failed"}</span></td>` +
+               `<td class="n">${r.ok ? r.coas : "–"}</td></tr>`;
+      }).join("");
+      const xlsx = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+      let links = "";
+      const pdfs = ok.reduce((s, r) => s + (r.pdf_count || 0), 0);
+      if (m.all) links += link(m.all, "COA_inventory_files.zip", "application/zip", "") +
+        `<p class="muted dl-note">Excel sheet${m.outputs.length > 1 ? "s" : ""} + ${pdfs} COA PDF${pdfs === 1 ? "" : "s"} renamed to <code>&lt;lot&gt;_&lt;expiry&gt;.pdf</code>. Or download just the Excel:</p>`;
+      links += m.outputs.map((o) => link(o.data, o.name, xlsx, "sec")).join("");
+      $("results").innerHTML =
+        `<div class="summary">
+           <div class="stat"><b>${coas}</b><span>COAs read</span></div>
+           <div class="stat"><b>${m.outputs.length}</b><span>Excel file(s)</span></div>
+           <div class="stat"><b style="color:${failed ? "var(--fail)" : "inherit"}">${failed}</b><span>file(s) failed</span></div>
+         </div>
+         <div class="table-wrap"><table><tr><th>File</th><th>Result</th><th style="text-align:right">COAs</th></tr>${rows}</table></div>
+         ${links ? `<div class="downloads">${links}</div>` : ""}`;
+      $("resultsCard").hidden = false;
+      setStatus(m.outputs.length
+        ? `<span class="s-ok">Done in ${m.seconds.toFixed(1)} s.</span>&nbsp;Download below.`
+        : `<span class="s-fail">No files could be processed.</span>`);
+      refresh();
+      $("resultsCard").scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+</script>
+</body>
+</html>

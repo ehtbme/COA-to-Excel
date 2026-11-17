@@ -1,6 +1,6 @@
 /* COA -> Excel in plain JavaScript (no Python, nothing downloaded).
  *
- * A line-by-line port of ../coa_to_excel/coa_to_excel.py plus the upload rules of py/browser_glue.py,
+ * A line-by-line port of coa_to_excel.py (copy in py/) plus the upload checks of the web and desktop apps,
  * so the single-file page gives the same results as the Python apps. Uses pdf.js (Mozilla's PDF reader)
  * for the PDFs and fflate for zip files. Checked against the Python script on all test COAs
  * (see tests/parity_test.py); if you change one, change the other and re-run that test.
@@ -505,8 +505,8 @@
     return fflate.zipSync(zipInput, { level: 6 });
   }
 
-  // --------------------------------------------------------------------------- uploads (browser_glue.py rules)
-  function safeBasename(name) {                                    // browser_glue.safe_basename
+  // --------------------------------------------------------------------------- uploads (same checks as the web/desktop apps)
+  function safeBasename(name) {                                    // web app safe_basename
     const parts = String(name).split("\\").join("/").split("/").filter((p) => p && p !== ".");
     let base = parts.length ? parts[parts.length - 1] : "";
     base = base.replace(/[^A-Za-z0-9._ ()-]/gu, "_").replace(/^[ .]+|[ .]+$/g, "").replace(/^[-.]+/, "");
@@ -551,7 +551,7 @@
     return { rows, pdfs, unreadable };
   }
 
-  /** browser_glue.convert for one uploaded file. */
+  /** One uploaded file (.pdf or .zip) -> rows + renamed PDFs, or a failure reason. */
   async function convertUpload(libs, name, bytes, progress) {
     const res = { name, ok: false, reason: "", coas: 0, xlsx_name: "", note: "" };
     const base = safeBasename(name);
@@ -599,7 +599,7 @@
     return { res, rows, pdfs };
   }
 
-  /** browser_glue.convert_all: [{name, data}] -> {results, outputs: [{name, data}], all: zip bytes | null}. */
+  /** All uploaded files: [{name, data}] -> {results, outputs: [{name, data}], all: zip bytes | null}. */
   async function convertAll(libs, files, progress) {
     const results = [], outputs = [], zipFiles = {}, used = new Set();
     for (let i = 0; i < files.length; i++) {

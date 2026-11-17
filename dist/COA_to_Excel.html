@@ -163,7 +163,7 @@
     </details>
   </section>
 
-  <footer>Everything runs inside this one file: no internet needed, nothing is installed or uploaded.</footer>
+  <footer>Everything runs inside this one page: no internet needed, nothing is installed or uploaded.</footer>
 </div>
 
 <script>
@@ -180,7 +180,7 @@ window.COA_STD_FONTS = {"Courier":[-194.0,0,{" ":600,"!":600,"\"":600,"#":600,"$
 <script>
 /* COA -> Excel in plain JavaScript (no Python, nothing downloaded).
  *
- * A line-by-line port of ../coa_to_excel/coa_to_excel.py plus the upload rules of py/browser_glue.py,
+ * A line-by-line port of coa_to_excel.py (copy in py/) plus the upload checks of the web and desktop apps,
  * so the single-file page gives the same results as the Python apps. Uses pdf.js (Mozilla's PDF reader)
  * for the PDFs and fflate for zip files. Checked against the Python script on all test COAs
  * (see tests/parity_test.py); if you change one, change the other and re-run that test.
@@ -685,8 +685,8 @@ window.COA_STD_FONTS = {"Courier":[-194.0,0,{" ":600,"!":600,"\"":600,"#":600,"$
     return fflate.zipSync(zipInput, { level: 6 });
   }
 
-  // --------------------------------------------------------------------------- uploads (browser_glue.py rules)
-  function safeBasename(name) {                                    // browser_glue.safe_basename
+  // --------------------------------------------------------------------------- uploads (same checks as the web/desktop apps)
+  function safeBasename(name) {                                    // web app safe_basename
     const parts = String(name).split("\\").join("/").split("/").filter((p) => p && p !== ".");
     let base = parts.length ? parts[parts.length - 1] : "";
     base = base.replace(/[^A-Za-z0-9._ ()-]/gu, "_").replace(/^[ .]+|[ .]+$/g, "").replace(/^[-.]+/, "");
@@ -731,7 +731,7 @@ window.COA_STD_FONTS = {"Courier":[-194.0,0,{" ":600,"!":600,"\"":600,"#":600,"$
     return { rows, pdfs, unreadable };
   }
 
-  /** browser_glue.convert for one uploaded file. */
+  /** One uploaded file (.pdf or .zip) -> rows + renamed PDFs, or a failure reason. */
   async function convertUpload(libs, name, bytes, progress) {
     const res = { name, ok: false, reason: "", coas: 0, xlsx_name: "", note: "" };
     const base = safeBasename(name);
@@ -779,7 +779,7 @@ window.COA_STD_FONTS = {"Courier":[-194.0,0,{" ":600,"!":600,"\"":600,"#":600,"$
     return { res, rows, pdfs };
   }
 
-  /** browser_glue.convert_all: [{name, data}] -> {results, outputs: [{name, data}], all: zip bytes | null}. */
+  /** All uploaded files: [{name, data}] -> {results, outputs: [{name, data}], all: zip bytes | null}. */
   async function convertAll(libs, files, progress) {
     const results = [], outputs = [], zipFiles = {}, used = new Set();
     for (let i = 0; i < files.length; i++) {
@@ -816,8 +816,8 @@ window.COA_PDFJS_WORKER_SRC = "/**\n * @licstart The following is the entire lic
 <script>
 /* Runs the converter in this page with plain JavaScript (single-file build, nothing downloaded).
  *
- * Provides the same messages as worker.js (status / ready / fatal / error / done), so index.html's
- * page code works unchanged. build_single.py puts the pdf.js sources in COA_PDFJS_SRC and
+ * Gives src/page.html a worker-style object (postMessage in; status / ready / fatal / error / done
+ * messages out) while pdf.js does the PDF reading in a background thread. build_single.py puts the pdf.js sources in COA_PDFJS_SRC and
  * COA_PDFJS_WORKER_SRC; fflate (window.fflate) and coa_core.js (window.COA) are inlined before this.
  */
 (function () {
@@ -865,11 +865,7 @@ window.COA_PDFJS_WORKER_SRC = "/**\n * @licstart The following is the entire lic
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
   $("cols").innerHTML = COLUMNS.map(([c, a]) => `<li class="${a ? "auto" : ""}">${esc(c)}</li>`).join("");
 
-  // Bump VERSION when worker.js or py/*.py change, so browsers don't keep using cached copies.
-  const VERSION = "2026-11-16c";
-  const worker = window.COA_LOCAL_WORKER   // set in the single-file build (plain JavaScript, nothing downloaded)
-    ? window.COA_LOCAL_WORKER()
-    : new Worker("worker.js?v=" + VERSION);
+  const worker = window.COA_LOCAL_WORKER();   // js/app_local.js: the converter, run in this page
   const input = $("files"), drop = $("drop"), go = $("go"), statusEl = $("status");
   let ready = false, busy = false, picked = [], urls = [];
 

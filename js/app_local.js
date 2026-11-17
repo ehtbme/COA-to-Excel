@@ -1,7 +1,7 @@
 /* Runs the converter in this page with plain JavaScript (single-file build, nothing downloaded).
  *
- * Provides the same messages as worker.js (status / ready / fatal / error / done), so index.html's
- * page code works unchanged. build_single.py puts the pdf.js sources in COA_PDFJS_SRC and
+ * Gives src/page.html a worker-style object (postMessage in; status / ready / fatal / error / done
+ * messages out) while pdf.js does the PDF reading in a background thread. build_single.py puts the pdf.js sources in COA_PDFJS_SRC and
  * COA_PDFJS_WORKER_SRC; fflate (window.fflate) and coa_core.js (window.COA) are inlined before this.
  */
 (function () {

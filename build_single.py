@@ -1,9 +1,11 @@
-"""Build dist/COA_to_Excel.html: the whole tool in ONE file, plain JavaScript, nothing downloaded.
+"""Build the page: the whole tool in ONE html file, plain JavaScript, nothing downloaded.
 
     python3 build_single.py
 
-Double-click the result: it opens in Edge/Chrome and works with no internet, no server and no install.
-It packs index.html's page with:
+Writes the same file twice:
+  index.html                the GitHub Pages site
+  dist/COA_to_Excel.html    to send to colleagues: double-click it, works with no internet or install
+It packs src/page.html (the page design) with:
   js/coa_core.js      the converter (a JavaScript port of ../coa_to_excel/coa_to_excel.py)
   js/std_fonts.js     pdfminer's metrics for the 14 standard PDF fonts (keeps results identical to Python)
   js/app_local.js     connects the page to the converter
@@ -20,7 +22,7 @@ import re
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-OUT = HERE / "dist" / "COA_to_Excel.html"
+OUTPUTS = [HERE / "index.html", HERE / "dist" / "COA_to_Excel.html"]
 VENDOR = {
     "pdf.min.mjs": "44ec6f011027ee77791386b66c14876a5fc29e20bf0433c07c6726fff7212b72",
     "pdf.worker.min.mjs": "bd88805178a26c729db8c0107a5b630cb900ec070f4d8c7529a3e45530afd41d",
@@ -69,21 +71,10 @@ def js_string(text: str) -> str:
 
 
 def main() -> None:
-    page = (HERE / "index.html").read_text(encoding="utf-8")
-    replacements = [
-        ("<footer>Python runs inside this browser tab (Pyodide). After the page has loaded, conversion works offline.</footer>",
-         "<footer>Everything runs inside this one file: no internet needed, nothing is installed or uploaded.</footer>"),
-        ('<div id="status"><span class="spin"></span>Starting…</div>',
-         '<div id="status"><span class="spin"></span>Loading…</div>'),
-    ]
-    for old, new in replacements:
-        if page.count(old) != 1:
-            raise SystemExit(f"index.html changed: can't find {old[:60]!r}")
-        page = page.replace(old, new)
-
+    page = (HERE / "src" / "page.html").read_text(encoding="utf-8")
     marker = "<script>\n  const COLUMNS"
     if page.count(marker) != 1:
-        raise SystemExit("index.html changed: can't find the page script")
+        raise SystemExit("src/page.html changed: can't find the page script")
     libs = (inline_script(vendor("fflate.umd.js"))
             + inline_script((HERE / "js" / "std_fonts.js").read_text(encoding="utf-8"))
             + inline_script((HERE / "js" / "coa_core.js").read_text(encoding="utf-8"))
@@ -91,9 +82,10 @@ def main() -> None:
             + "window.COA_PDFJS_WORKER_SRC = " + js_string(patch_pdfjs_worker(vendor("pdf.worker.min.mjs"))) + ";\n</script>\n"
             + inline_script((HERE / "js" / "app_local.js").read_text(encoding="utf-8")))
     page = page.replace(marker, libs + marker)
-    OUT.parent.mkdir(exist_ok=True)
-    OUT.write_text(page, encoding="utf-8")
-    print(f"wrote {OUT}  ({OUT.stat().st_size / 1e6:.1f} MB)")
+    for out in OUTPUTS:
+        out.parent.mkdir(exist_ok=True)
+        out.write_text(page, encoding="utf-8")
+        print(f"wrote {out.relative_to(HERE)}  ({out.stat().st_size / 1e6:.1f} MB)")
 
 
 if __name__ == "__main__":
